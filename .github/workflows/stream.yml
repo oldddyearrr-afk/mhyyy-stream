@@ -1,0 +1,47 @@
+name: ðŸ“¡ Live Stream Pro
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */5 * * *'
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: ðŸ’¾ Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-pyzmq
+
+      - name: ðŸ’¾ Cache ffmpeg
+        id: cache-ffmpeg
+        uses: actions/cache@v4
+        with:
+          path: /usr/bin/ffmpeg
+          key: ffmpeg-ubuntu-6.1
+
+      - name: ðŸ“¦ Install ffmpeg
+        if: steps.cache-ffmpeg.outputs.cache-hit != 'true'
+        run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg -qq
+
+      - name: ðŸ“¦ Install Python deps
+        run: pip install pyzmq --quiet
+
+      - name: ðŸš€ Start Stream
+        env:
+          INPUT_URL:  ${{ secrets.INPUT_URL }}
+          OUTPUT_URL: ${{ secrets.OUTPUT_URL }}
+          GIST_ID:    ${{ secrets.GIST_ID }}
+          GH_TOKEN:   ${{ secrets.GH_TOKEN }}
+        run: python stream.py
+
